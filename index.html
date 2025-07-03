@@ -152,28 +152,50 @@
       tempCanvas.height = height;
       tempCtx.drawImage(croppedCanvas, 0, 0, width, height);
 
-      compressToTargetKB(tempCanvas, parseInt(targetKBInput.value));
+      forceSizeKB(tempCanvas, parseInt(targetKBInput.value));
     });
 
-    function compressToTargetKB(canvas, targetKB) {
-      let quality = 0.95;
-      function tryCompress() {
+    function forceSizeKB(canvas, targetKB) {
+      const targetBytes = targetKB * 1024;
+      let quality = 0.92;
+      let paddingSize = 0;
+
+      function generateBlob() {
         canvas.toBlob((blob) => {
-          const sizeKB = blob.size / 1024;
-          if (sizeKB > targetKB && quality > 0.6) {
-            quality -= 0.03;
-            tryCompress();
+          if (blob.size < targetBytes) {
+            const extraBytes = targetBytes - blob.size;
+            paddingSize += extraBytes;
+            const data = new Uint8Array(paddingSize).fill(0);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64Image = reader.result;
+              const combined = base64Image + btoa(String.fromCharCode.apply(null, data));
+              const byteString = atob(combined);
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              const finalBlob = new Blob([ab], { type: 'image/jpeg' });
+              triggerDownload(finalBlob);
+            };
+            reader.readAsDataURL(blob);
           } else {
-            resizedBlob = blob;
-            imgSizeDisplay.textContent = `Final image size: ${sizeKB.toFixed(2)} KB`;
-            const link = document.createElement('a');
-            link.download = 'resized-image.jpg';
-            link.href = URL.createObjectURL(resizedBlob);
-            link.click();
+            triggerDownload(blob);
           }
         }, 'image/jpeg', quality);
       }
-      tryCompress();
+
+      function triggerDownload(finalBlob) {
+        const sizeKB = finalBlob.size / 1024;
+        imgSizeDisplay.textContent = `Final image size: ${sizeKB.toFixed(2)} KB`;
+        const link = document.createElement('a');
+        link.download = 'resized-image.jpg';
+        link.href = URL.createObjectURL(finalBlob);
+        link.click();
+      }
+
+      generateBlob();
     }
   </script></body>
 </html>
