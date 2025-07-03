@@ -1,43 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Resize and crop your job and passport photos to exact sizes like 100x120, 150x180. Fast, free, no upload required.">
-  <title>Job Photo Resizer - 100x120 & More</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+  <title>ImgResizer - Crop & Resize Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: white;
+      background-color: darkred;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    #upload-section {
+      margin-bottom: 15px;
+    }
+    input[type="number"], select {
+      width: 100px;
+      margin: 5px;
+      padding: 5px;
+    }
+    canvas {
+      margin-top: 15px;
+      border: 1px solid #ccc;
+    }
+    #download-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #download-btn:active {
+      background-color: #28a745;
+    }
+    #img-size {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Resize & Crop Job/Passport Photo</h1>
+  <h1>ImgResizer - Crop & Resize Tool</h1>  <div id="upload-section">
     <input type="file" id="upload" accept="image/*" />
-    <div class="options">
-      <label for="size">Select Size:</label>
-      <select id="size">
-        <option value="100x120">100x120</option>
-        <option value="150x180">150x180</option>
-        <option value="200x230">200x230</option>
-      </select>
-      <label for="quality">Quality:</label>
-      <select id="quality">
-        <option value="1.0">High</option>
-        <option value="0.8">Medium</option>
-        <option value="0.6">Low</option>
-      </select>
-      <label for="format">Format:</label>
-      <select id="format">
-        <option value="image/jpeg">JPG</option>
-        <option value="image/png">PNG</option>
-        <option value="image/webp">WebP</option>
-      </select>
-      <button id="download">Download</button>
-    </div>
-    <div class="image-area">
-      <img id="image" />
-    </div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-  <script src="script.js"></script>
-</body>
+  </div>  <div>
+    <label>Width:</label>
+    <input type="number" id="width" value="100" />
+    <label>Height:</label>
+    <input type="number" id="height" value="120" />
+    <select id="unit">
+      <option value="px">px</option>
+      <option value="cm">cm</option>
+    </select>
+  </div>  <div>
+    <label>Target Size (KB):</label>
+    <input type="number" id="targetKB" value="50" />
+  </div>  <div>
+    <button id="download-btn">Download Cropped Image</button>
+  </div><canvas id="canvas" style="display:none;"></canvas>
+
+  <div id="img-size"></div>  <script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('download-btn');
+    const imgSizeDisplay = document.getElementById('img-size');
+    const unitSelect = document.getElementById('unit');
+    const targetKBInput = document.getElementById('targetKB');
+
+    let image = new Image();
+
+    function cmToPx(cm) {
+      return Math.round((cm / 2.54) * 96); // 96 dpi
+    }
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        image.onload = () => {
+          let width = parseInt(document.getElementById('width').value);
+          let height = parseInt(document.getElementById('height').value);
+
+          if (unitSelect.value === 'cm') {
+            width = cmToPx(width);
+            height = cmToPx(height);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(image, 0, 0, width, height);
+          canvas.style.display = 'block';
+
+          compressAndDisplay(canvas, parseInt(targetKBInput.value));
+        };
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function compressAndDisplay(canvas, targetKB) {
+      let quality = 0.95;
+
+      function attemptCompress() {
+        canvas.toBlob((blob) => {
+          const sizeKB = blob.size / 1024;
+          if (sizeKB > targetKB && quality > 0.6) {
+            quality -= 0.01;
+            attemptCompress();
+          } else {
+            imgSizeDisplay.textContent = `Final image size: ${sizeKB.toFixed(2)} KB`;
+            downloadBtn.onclick = () => {
+              const link = document.createElement('a');
+              link.download = 'resized-image.jpg';
+              link.href = URL.createObjectURL(blob);
+              link.click();
+            };
+          }
+        }, 'image/jpeg', quality);
+      }
+
+      attemptCompress();
+    }
+  </script></body>
 </html>
