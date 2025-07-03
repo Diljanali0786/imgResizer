@@ -1,9 +1,9 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer - Crop & Resize Tool</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImgResizer - Resize by KB</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,14 +12,13 @@
       background-color: #f8f9fa;
     }
     h1 {
-      margin-bottom: 20px;
       color: white;
       background-color: darkred;
       padding: 10px;
-      border-radius: 6px;
+      border-radius: 8px;
     }
-    #upload-section {
-      margin-bottom: 15px;
+    #upload-section, #controls {
+      margin: 15px 0;
     }
     input[type="number"], select {
       width: 100px;
@@ -27,19 +26,17 @@
       padding: 5px;
     }
     #image-container {
-      display: inline-block;
       max-width: 100%;
       max-height: 400px;
       overflow: hidden;
-      position: relative;
-      margin-top: 15px;
+      display: inline-block;
       border: 1px solid #ccc;
+      margin-top: 15px;
     }
     #preview {
-      display: block;
       max-width: 100%;
       max-height: 400px;
-      margin: 0 auto;
+      display: none;
     }
     #download-btn {
       margin-top: 15px;
@@ -48,7 +45,7 @@
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
     }
     #download-btn:active {
@@ -61,37 +58,39 @@
   </style>
 </head>
 <body>
-  <h1>ImgResizer - Crop & Resize Tool</h1>  <div id="upload-section">
-    <input type="file" id="upload" accept="image/*" />
-  </div>  <div>
+  <h1>ImgResizer - Resize by KB</h1>
+  <div id="upload-section">
+    <input type="file" id="upload" accept="image/*">
+  </div>
+  <div id="controls">
     <label>Width:</label>
-    <input type="number" id="width" value="100" />
+    <input type="number" id="width" value="100">
     <label>Height:</label>
-    <input type="number" id="height" value="120" />
+    <input type="number" id="height" value="120">
     <select id="unit">
       <option value="px">px</option>
       <option value="cm">cm</option>
     </select>
-  </div>  <div>
+    <br>
     <label>Target Size (KB):</label>
-    <input type="number" id="targetKB" value="50" />
-  </div>  <div>
-    <button id="download-btn">Download Cropped Image</button>
-  </div>  <div id="image-container">
-    <img id="preview" style="display:none;" />
-  </div><canvas id="canvas" style="display:none;"></canvas>
-
+    <input type="number" id="targetKB" value="50">
+  </div>
+  <button id="download-btn">Download Cropped Image</button>
+  <div id="image-container">
+    <img id="preview" />
+  </div>
+  <canvas id="canvas" style="display:none;"></canvas>
   <div id="img-size"></div>  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>  <script>
     const upload = document.getElementById('upload');
     const preview = document.getElementById('preview');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const downloadBtn = document.getElementById('download-btn');
-    const imgSizeDisplay = document.getElementById('img-size');
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
     const unitSelect = document.getElementById('unit');
     const targetKBInput = document.getElementById('targetKB');
+    const downloadBtn = document.getElementById('download-btn');
+    const imgSizeDisplay = document.getElementById('img-size');
+
     let cropper;
-    let resizedBlob = null;
 
     function cmToPx(cm) {
       return Math.round((cm / 2.54) * 96);
@@ -100,14 +99,16 @@
     upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = (event) => {
         preview.src = event.target.result;
         preview.style.display = 'block';
+
         if (cropper) cropper.destroy();
 
-        let width = parseInt(document.getElementById('width').value);
-        let height = parseInt(document.getElementById('height').value);
+        let width = parseInt(widthInput.value);
+        let height = parseInt(heightInput.value);
         if (unitSelect.value === 'cm') {
           width = cmToPx(width);
           height = cmToPx(height);
@@ -116,12 +117,11 @@
         cropper = new Cropper(preview, {
           viewMode: 1,
           dragMode: 'move',
-          autoCrop: true,
           autoCropArea: 1,
-          responsive: true,
-          background: false,
           cropBoxResizable: false,
           cropBoxMovable: false,
+          background: false,
+          responsive: true,
           ready() {
             cropper.setCropBoxData({ width, height });
           }
@@ -131,71 +131,82 @@
     });
 
     downloadBtn.addEventListener('click', () => {
-      if (!cropper) {
-        alert('Upload and crop an image first.');
-        return;
-      }
+      if (!cropper) return alert("Please upload an image first.");
 
-      let croppedCanvas = cropper.getCroppedCanvas();
+      const croppedCanvas = cropper.getCroppedCanvas();
+      const tempCanvas = document.createElement('canvas');
+      const ctx = tempCanvas.getContext('2d');
 
-      let width = parseInt(document.getElementById('width').value);
-      let height = parseInt(document.getElementById('height').value);
-
+      let width = parseInt(widthInput.value);
+      let height = parseInt(heightInput.value);
       if (unitSelect.value === 'cm') {
         width = cmToPx(width);
         height = cmToPx(height);
       }
 
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
       tempCanvas.width = width;
       tempCanvas.height = height;
-      tempCtx.drawImage(croppedCanvas, 0, 0, width, height);
+      ctx.drawImage(croppedCanvas, 0, 0, width, height);
 
-      forceSizeKB(tempCanvas, parseInt(targetKBInput.value));
+      compressExactKB(tempCanvas, parseInt(targetKBInput.value));
     });
 
-    function forceSizeKB(canvas, targetKB) {
+    function compressExactKB(canvas, targetKB) {
+      let quality = 1.0;
       const targetBytes = targetKB * 1024;
-      let quality = 0.92;
-      let paddingSize = 0;
 
-      function generateBlob() {
-        canvas.toBlob((blob) => {
-          if (blob.size < targetBytes) {
-            const extraBytes = targetBytes - blob.size;
-            paddingSize += extraBytes;
-            const data = new Uint8Array(paddingSize).fill(0);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64Image = reader.result;
-              const combined = base64Image + btoa(String.fromCharCode.apply(null, data));
-              const byteString = atob(combined);
-              const ab = new ArrayBuffer(byteString.length);
-              const ia = new Uint8Array(ab);
-              for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-              }
-              const finalBlob = new Blob([ab], { type: 'image/jpeg' });
-              triggerDownload(finalBlob);
-            };
-            reader.readAsDataURL(blob);
-          } else {
-            triggerDownload(blob);
-          }
-        }, 'image/jpeg', quality);
+      canvas.toBlob(async (blob) => {
+        if (blob.size === targetBytes) {
+          triggerDownload(blob);
+        } else if (blob.size > targetBytes) {
+          reduce(blob);
+        } else {
+          pad(blob);
+        }
+      }, 'image/jpeg', quality);
+
+      function reduce(blob) {
+        let q = 0.95;
+        const tryReduce = () => {
+          canvas.toBlob((b) => {
+            if (b.size <= targetBytes || q < 0.1) {
+              triggerDownload(b);
+            } else {
+              q -= 0.05;
+              tryReduce();
+            }
+          }, 'image/jpeg', q);
+        };
+        tryReduce();
       }
 
-      function triggerDownload(finalBlob) {
-        const sizeKB = finalBlob.size / 1024;
-        imgSizeDisplay.textContent = `Final image size: ${sizeKB.toFixed(2)} KB`;
+      function pad(blob) {
+        const padding = targetBytes - blob.size;
+        const dummy = new Uint8Array(padding).fill(0);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result;
+          const combined = base64 + btoa(String.fromCharCode.apply(null, dummy));
+          const byteString = atob(combined);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const paddedBlob = new Blob([ia], { type: 'image/jpeg' });
+          triggerDownload(paddedBlob);
+        };
+        reader.readAsDataURL(blob);
+      }
+
+      function triggerDownload(blob) {
+        const sizeKB = (blob.size / 1024).toFixed(2);
+        imgSizeDisplay.textContent = `Final image size: ${sizeKB} KB`;
         const link = document.createElement('a');
         link.download = 'resized-image.jpg';
-        link.href = URL.createObjectURL(finalBlob);
+        link.href = URL.createObjectURL(blob);
         link.click();
       }
-
-      generateBlob();
     }
   </script></body>
 </html>
