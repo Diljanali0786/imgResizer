@@ -1,0 +1,22 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f2f2f2;
+  text-align: center;
+}
+.container {
+  padding: 20px;
+}
+.options {
+  margin: 10px auto;
+}
+.image-area {
+  margin-top: 20px;
+  max-width: 100%;
+  overflow: hidden;
+}
+img {
+  max-width: 100%;
+  display: none;
+}

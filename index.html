@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Resize and crop your job and passport photos to exact sizes like 100x120, 150x180. Fast, free, no upload required.">
+  <title>Job Photo Resizer - 100x120 & More</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>Resize & Crop Job/Passport Photo</h1>
+    <input type="file" id="upload" accept="image/*" />
+    <div class="options">
+      <label for="size">Select Size:</label>
+      <select id="size">
+        <option value="100x120">100x120</option>
+        <option value="150x180">150x180</option>
+        <option value="200x230">200x230</option>
+      </select>
+      <label for="quality">Quality:</label>
+      <select id="quality">
+        <option value="1.0">High</option>
+        <option value="0.8">Medium</option>
+        <option value="0.6">Low</option>
+      </select>
+      <label for="format">Format:</label>
+      <select id="format">
+        <option value="image/jpeg">JPG</option>
+        <option value="image/png">PNG</option>
+        <option value="image/webp">WebP</option>
+      </select>
+      <button id="download">Download</button>
+    </div>
+    <div class="image-area">
+      <img id="image" />
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
