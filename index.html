@@ -28,16 +28,18 @@
     }
     #image-container {
       display: inline-block;
-      width: auto;
-      height: auto;
       max-width: 100%;
+      max-height: 400px;
       overflow: hidden;
-      border: 1px solid #ccc;
+      position: relative;
       margin-top: 15px;
+      border: 1px solid #ccc;
     }
-    canvas, #preview {
+    #preview {
       display: block;
       max-width: 100%;
+      max-height: 400px;
+      margin: 0 auto;
     }
     #download-btn {
       margin-top: 15px;
@@ -113,8 +115,8 @@
 
         cropper = new Cropper(preview, {
           viewMode: 1,
-          autoCrop: true,
           dragMode: 'move',
+          autoCrop: true,
           autoCropArea: 1,
           responsive: true,
           background: false,
@@ -122,7 +124,6 @@
           cropBoxMovable: false,
           ready() {
             cropper.setCropBoxData({ width, height });
-            cropper.setCanvasData({ width: preview.width });
           }
         });
       };
