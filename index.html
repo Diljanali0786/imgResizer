@@ -5,33 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Thumbnail Extractor</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #f8f8f8; }
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+      background: #f8f8f8;
+    }
     header {
       background-color: maroon;
       color: white;
-      padding: 15px;
+      padding: 20px;
       text-align: center;
-      font-size: 22px;
+      font-size: 26px;
       font-weight: bold;
     }
     input {
       width: 90%;
-      padding: 8px;
+      padding: 10px;
       margin: 20px 5%;
-      font-size: 16px;
+      font-size: 18px;
     }
     button {
       display: inline-block;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 12px 22px;
+      font-size: 18px;
       cursor: pointer;
       margin: 10px 5px;
       border-radius: 5px;
       border: none;
       transition: background-color 0.3s;
     }
-    img { max-width: 90%; margin: 10px 5%; display: block; border: 1px solid #ccc; border-radius: 4px; }
-    .output { margin-top: 20px; word-break: break-all; text-align: center; }
+    img {
+      max-width: 90%;
+      margin: 10px 5%;
+      display: block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .output {
+      margin-top: 20px;
+      word-break: break-all;
+      text-align: center;
+    }
     .download-btn {
       background-color: blue;
       color: white;
@@ -42,8 +58,19 @@
     .quality-label {
       display: inline-block;
       margin-left: 10px;
-      font-size: 14px;
+      font-size: 18px; /* same as button size */
+      font-weight: 500;
       color: #333;
+      vertical-align: middle;
+    }
+    @media (max-width: 600px) {
+      header {
+        font-size: 24px;
+        padding: 18px;
+      }
+      input, button, .quality-label {
+        font-size: 16px;
+      }
     }
   </style>
 </head>
@@ -52,43 +79,44 @@
   <header>YouTube Thumbnail Extractor</header>
 
   <input type="text" id="youtubeURL" placeholder="Paste YouTube URL here" />
-  <button onclick="getThumbnails()">Get Thumbnails</button>
+  <button onclick="getThumbnail()">Get Thumbnail</button>
 
   <div class="output" id="output"></div>
 
   <script>
-    async function getThumbnails() {
+    async function getThumbnail() {
       const url = document.getElementById("youtubeURL").value.trim();
       const result = parseYouTubeURL(url);
 
       const outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = "";
+
       if (result) {
-        const thumbnails = [
+        const qualities = [
           { url: `https://img.youtube.com/vi/${result.videoID}/maxresdefault.jpg`, label: "4K" },
           { url: `https://img.youtube.com/vi/${result.videoID}/hqdefault.jpg`, label: "1080p" },
           { url: `https://img.youtube.com/vi/${result.videoID}/sddefault.jpg`, label: "480p" }
         ];
 
-        let htmlContent = "";
+        let found = false;
 
-        for (const thumb of thumbnails) {
+        for (const thumb of qualities) {
           const available = await checkImageExists(thumb.url);
-          if (available) {
-            htmlContent += `
+          if (available && !found) {
+            outputDiv.innerHTML = `
               <div>
                 <img src="${thumb.url}" alt="${thumb.label} Thumbnail"/><br/>
                 <button class="download-btn" onclick="downloadImage('${thumb.url}', '${result.videoID}-${thumb.label}.jpg')">Download</button>
                 <span class="quality-label">${thumb.label}</span>
               </div>
             `;
+            found = true;
           }
         }
 
-        if (!htmlContent) {
-          htmlContent = "<span style='color:red'>No thumbnails found for this video.</span>";
+        if (!found) {
+          outputDiv.innerHTML = "<span style='color:red'>No thumbnails found for this video.</span>";
         }
-
-        outputDiv.innerHTML = htmlContent;
 
       } else {
         outputDiv.innerHTML = "<span style='color:red'>Invalid YouTube URL</span>";
