@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer with Fixed Crop & Target KB</title>
+  <title>ImgResizer Final Target KB</title>
 
   <!-- Cropper.js CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -18,28 +18,21 @@
   </style>
 </head>
 <body>
-  <h2>ImgResizer with Fixed Crop & Target KB</h2>
+  <h2>ImgResizer Final Target KB</h2>
 
-  <!-- Upload -->
   <input type="file" id="fileInput" accept="image/*"><br>
-
-  <!-- Width, Height, Unit -->
   <input type="number" id="widthInput" placeholder="Width">
   <input type="number" id="heightInput" placeholder="Height">
   <select id="unitSelect">
     <option value="px">px</option>
     <option value="cm">cm</option>
   </select><br>
-
-  <!-- Target KB -->
   <input type="number" id="targetKB" placeholder="Target KB"><br>
 
-  <!-- Image Preview -->
   <div>
     <img id="preview" style="max-width:300px; display:none;">
   </div>
 
-  <!-- Download Button -->
   <button id="downloadBtn">Download Image</button>
 
   <script>
@@ -75,24 +68,15 @@
           cropBoxResizable: true,
         });
 
-        // Set crop box initially if width and height are entered
         setTimeout(updateCropBox, 500);
       };
       reader.readAsDataURL(file);
     });
 
     unitSelect.addEventListener('change', () => {
-      if (unitSelect.value === 'cm') {
-        widthInput.placeholder = 'Width (cm)';
-        heightInput.placeholder = 'Height (cm)';
-      } else {
-        widthInput.placeholder = 'Width (px)';
-        heightInput.placeholder = 'Height (px)';
-      }
       updateCropBox();
     });
 
-    // Update crop box size based on width/height input
     function updateCropBox() {
       if (!cropper) return;
 
@@ -122,9 +106,10 @@
       let width = parseFloat(widthInput.value);
       let height = parseFloat(heightInput.value);
       let unit = unitSelect.value;
+      let targetSize = parseInt(targetKB.value) * 1024;
 
-      if (!width || !height) {
-        alert('Please enter width and height before downloading.');
+      if (!width || !height || !targetSize) {
+        alert('Please enter width, height, and target KB before downloading.');
         return;
       }
 
@@ -133,43 +118,41 @@
         height = cmToPx(height);
       }
 
-      const canvas = cropper.getCroppedCanvas({ width: width, height: height });
-
-      const targetSize = parseInt(targetKB.value) * 1024;
-
-      function toBlobPromise(quality) {
-        return new Promise((resolve) => {
-          canvas.toBlob((blob) => {
-            resolve(blob);
-          }, 'image/jpeg', quality);
-        });
-      }
-
-      async function compressLoop() {
+      async function compressAndResize() {
+        let tempWidth = width;
+        let tempHeight = height;
         let quality = 0.9;
-        let blob = await toBlobPromise(quality);
 
-        while (blob.size > targetSize && quality > 0.1) {
-          quality -= 0.05;
-          blob = await toBlobPromise(quality);
+        while (true) {
+          const canvas = cropper.getCroppedCanvas({ width: tempWidth, height: tempHeight });
+
+          const blob = await new Promise(resolve => {
+            canvas.toBlob(resolve, 'image/jpeg', quality);
+          });
+
+          if (blob.size <= targetSize || (quality <= 0.1 && (tempWidth < 50 || tempHeight < 50))) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'resized-image.jpg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            downloadBtn.classList.add('green');
+            if (blob.size > targetSize) alert("Couldn't reach target size. Minimum dimension or quality reached.");
+            break;
+          }
+
+          if (quality > 0.1) {
+            quality -= 0.05;
+          } else {
+            tempWidth = tempWidth * 0.9;
+            tempHeight = tempHeight * 0.9;
+          }
         }
-
-        if (quality <= 0.1 && blob.size > targetSize) {
-          alert("Couldn't reach target size. Minimum quality reached.");
-        }
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'resized-image.jpg';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        downloadBtn.classList.add('green');
       }
 
-      compressLoop();
+      compressAndResize();
     });
   </script>
 </body>
