@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer Min Quality 90%</title>
+  <title>Exact KB Image Resizer</title>
 
   <!-- Cropper.js CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <h2>ImgResizer Min Quality 90%</h2>
+  <h2>Exact KB Image Resizer</h2>
 
   <input type="file" id="fileInput" accept="image/*"><br>
   <input type="number" id="widthInput" placeholder="Width">
@@ -105,7 +105,6 @@
       let height = parseFloat(heightInput.value);
       let unit = unitSelect.value;
       let targetSize = parseInt(targetKB.value) * 1024;
-      const minQuality = 0.9;
 
       if (!width || !height || !targetSize) {
         alert('Please enter width, height, and target KB before downloading.');
@@ -117,42 +116,60 @@
         height = cmToPx(height);
       }
 
-      async function resizeToTarget() {
-        let tempWidth = width;
-        let tempHeight = height;
+      async function binarySearchExactCompress() {
+        const canvas = cropper.getCroppedCanvas({ width: width, height: height });
 
-        while (true) {
-          const canvas = cropper.getCroppedCanvas({ width: tempWidth, height: tempHeight });
+        let minQ = 0.1;
+        let maxQ = 1.0;
+        let bestBlob = null;
+        let bestDiff = Infinity;
+        let attempts = 0;
+
+        while (minQ <= maxQ && attempts < 20) {
+          let midQ = (minQ + maxQ) / 2;
 
           const blob = await new Promise(resolve => {
-            canvas.toBlob(resolve, 'image/jpeg', minQuality);
+            canvas.toBlob(resolve, 'image/jpeg', midQ);
           });
 
-          if (blob.size <= targetSize) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'resized-image.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            downloadBtn.classList.add('green');
+          const size = blob.size;
+          const diff = Math.abs(size - targetSize);
+
+          if (diff < bestDiff) {
+            bestBlob = blob;
+            bestDiff = diff;
+          }
+
+          if (size > targetSize) {
+            maxQ = midQ - 0.005;
+          } else if (size < targetSize) {
+            minQ = midQ + 0.005;
+          } else {
+            bestBlob = blob;
             break;
           }
 
-          // Reduce dimensions by 10% if size too big
-          tempWidth *= 0.9;
-          tempHeight *= 0.9;
+          attempts++;
+        }
 
-          // Stop if image too small
-          if (tempWidth < 50 || tempHeight < 50) {
-            alert("Couldn't reach target size without reducing quality below 90% or image too small.");
-            break;
-          }
+        if (bestBlob) {
+          const finalSizeKB = (bestBlob.size / 1024).toFixed(2);
+          console.log(`Final Size: ${finalSizeKB} KB`);
+
+          const url = URL.createObjectURL(bestBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'resized-image.jpg';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          downloadBtn.classList.add('green');
+        } else {
+          alert("Couldn't reach target size within quality limits.");
         }
       }
 
-      resizeToTarget();
+      binarySearchExactCompress();
     });
   </script>
 </body>
