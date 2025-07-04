@@ -65,24 +65,45 @@
       }
       const videoId = videoIdMatch[1];
 
-      const thumbUrlMax = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      // Define thumbnail qualities in order of preference
+      const qualities = [
+        { label: '4K', url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` },
+        { label: 'Standard', url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` }
+      ];
+
+      let availableThumb = null;
+
+      // Check availability in order
+      for (let q of qualities) {
+        try {
+          const res = await fetch(q.url, { method: 'HEAD' });
+          if (res.ok) {
+            availableThumb = q;
+            break;
+          }
+        } catch (err) {
+          console.log(`Quality ${q.label} not available`);
+        }
+      }
+
+      if (!availableThumb) {
+        alert('Thumbnail not found.');
+        return;
+      }
 
       const resultDiv = document.getElementById('result');
       resultDiv.innerHTML = `
         <div class="thumbnail">
-          <img src="${thumbUrlMax}" alt="Thumbnail">
+          <img src="${availableThumb.url}" alt="Thumbnail">
         </div>
         <div class="download-box">
-          <button class="download-btn" id="downloadBtn">Download 4K</button>
+          <button class="download-btn" id="downloadBtn">Download ${availableThumb.label}</button>
         </div>
       `;
 
-      // Hide Get Thumbnail button after click
-      document.getElementById('get').style.display = "none";
-
       // Direct download logic
       document.getElementById('downloadBtn').onclick = async function() {
-        const response = await fetch(thumbUrlMax);
+        const response = await fetch(availableThumb.url);
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
