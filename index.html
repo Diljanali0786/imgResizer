@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer with Fixed Crop</title>
+  <title>ImgResizer with Fixed Crop & Target KB</title>
 
   <!-- Cropper.js CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <h2>ImgResizer with Fixed Crop</h2>
+  <h2>ImgResizer with Fixed Crop & Target KB</h2>
 
   <!-- Upload -->
   <input type="file" id="fileInput" accept="image/*"><br>
@@ -136,28 +136,40 @@
       const canvas = cropper.getCroppedCanvas({ width: width, height: height });
 
       const targetSize = parseInt(targetKB.value) * 1024;
-      let quality = 0.9;
 
-      function compress() {
-        canvas.toBlob((blob) => {
-          if (blob.size > targetSize && quality > 0.1) {
-            quality -= 0.05;
-            compress();
-          } else {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'resized-image.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            downloadBtn.classList.add('green');
-          }
-        }, 'image/jpeg', quality);
+      function toBlobPromise(quality) {
+        return new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', quality);
+        });
       }
 
-      compress();
+      async function compressLoop() {
+        let quality = 0.9;
+        let blob = await toBlobPromise(quality);
+
+        while (blob.size > targetSize && quality > 0.1) {
+          quality -= 0.05;
+          blob = await toBlobPromise(quality);
+        }
+
+        if (quality <= 0.1 && blob.size > targetSize) {
+          alert("Couldn't reach target size. Minimum quality reached.");
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resized-image.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        downloadBtn.classList.add('green');
+      }
+
+      compressLoop();
     });
   </script>
 </body>
