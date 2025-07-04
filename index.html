@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer Final Target KB</title>
+  <title>ImgResizer Min Quality 90%</title>
 
   <!-- Cropper.js CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <h2>ImgResizer Final Target KB</h2>
+  <h2>ImgResizer Min Quality 90%</h2>
 
   <input type="file" id="fileInput" accept="image/*"><br>
   <input type="number" id="widthInput" placeholder="Width">
@@ -73,9 +73,7 @@
       reader.readAsDataURL(file);
     });
 
-    unitSelect.addEventListener('change', () => {
-      updateCropBox();
-    });
+    unitSelect.addEventListener('change', updateCropBox);
 
     function updateCropBox() {
       if (!cropper) return;
@@ -107,6 +105,7 @@
       let height = parseFloat(heightInput.value);
       let unit = unitSelect.value;
       let targetSize = parseInt(targetKB.value) * 1024;
+      const minQuality = 0.9;
 
       if (!width || !height || !targetSize) {
         alert('Please enter width, height, and target KB before downloading.');
@@ -118,19 +117,18 @@
         height = cmToPx(height);
       }
 
-      async function compressAndResize() {
+      async function resizeToTarget() {
         let tempWidth = width;
         let tempHeight = height;
-        let quality = 0.9;
 
         while (true) {
           const canvas = cropper.getCroppedCanvas({ width: tempWidth, height: tempHeight });
 
           const blob = await new Promise(resolve => {
-            canvas.toBlob(resolve, 'image/jpeg', quality);
+            canvas.toBlob(resolve, 'image/jpeg', minQuality);
           });
 
-          if (blob.size <= targetSize || (quality <= 0.1 && (tempWidth < 50 || tempHeight < 50))) {
+          if (blob.size <= targetSize) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -139,20 +137,22 @@
             a.click();
             document.body.removeChild(a);
             downloadBtn.classList.add('green');
-            if (blob.size > targetSize) alert("Couldn't reach target size. Minimum dimension or quality reached.");
             break;
           }
 
-          if (quality > 0.1) {
-            quality -= 0.05;
-          } else {
-            tempWidth = tempWidth * 0.9;
-            tempHeight = tempHeight * 0.9;
+          // Reduce dimensions by 10% if size too big
+          tempWidth *= 0.9;
+          tempHeight *= 0.9;
+
+          // Stop if image too small
+          if (tempWidth < 50 || tempHeight < 50) {
+            alert("Couldn't reach target size without reducing quality below 90% or image too small.");
+            break;
           }
         }
       }
 
-      compressAndResize();
+      resizeToTarget();
     });
   </script>
 </body>
