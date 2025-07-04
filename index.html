@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgResizer with Crop</title>
+  <title>ImgResizer with Fixed Crop</title>
 
   <!-- Cropper.js CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
   </style>
 </head>
 <body>
-  <h2>ImgResizer with Crop</h2>
+  <h2>ImgResizer with Fixed Crop</h2>
 
   <!-- Upload -->
   <input type="file" id="fileInput" accept="image/*"><br>
@@ -74,6 +74,9 @@
           scalable: false,
           cropBoxResizable: true,
         });
+
+        // Set crop box initially if width and height are entered
+        setTimeout(updateCropBox, 500);
       };
       reader.readAsDataURL(file);
     });
@@ -86,7 +89,32 @@
         widthInput.placeholder = 'Width (px)';
         heightInput.placeholder = 'Height (px)';
       }
+      updateCropBox();
     });
+
+    // Update crop box size based on width/height input
+    function updateCropBox() {
+      if (!cropper) return;
+
+      let width = parseFloat(widthInput.value);
+      let height = parseFloat(heightInput.value);
+      let unit = unitSelect.value;
+
+      if (!width || !height) return;
+
+      if (unit === 'cm') {
+        width = cmToPx(width);
+        height = cmToPx(height);
+      }
+
+      cropper.setCropBoxData({
+        width: width,
+        height: height
+      });
+    }
+
+    widthInput.addEventListener('input', updateCropBox);
+    heightInput.addEventListener('input', updateCropBox);
 
     downloadBtn.addEventListener('click', () => {
       if (!cropper) return alert('Please upload and crop an image first.');
@@ -94,6 +122,11 @@
       let width = parseFloat(widthInput.value);
       let height = parseFloat(heightInput.value);
       let unit = unitSelect.value;
+
+      if (!width || !height) {
+        alert('Please enter width and height before downloading.');
+        return;
+      }
 
       if (unit === 'cm') {
         width = cmToPx(width);
