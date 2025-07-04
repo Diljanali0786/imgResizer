@@ -3,79 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Thumbnail Downloader | [Your Brand]</title>
-  <meta name="description" content="Download YouTube video thumbnails in 4K, HD, or other quality options instantly. Fast and free thumbnail downloader tool.">
+  <title>YouTube Thumbnail Extractor</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
-    h1 { color: #cc0000; }
-    input[type="text"] { width: 80%; padding: 10px; margin: 10px 0; }
-    button { padding: 10px 20px; background: #007BFF; color: #fff; border: none; cursor: pointer; }
-    button:active { background: #28a745; }
+    body { font-family: sans-serif; max-width: 600px; margin: 30px auto; padding: 10px; }
+    input { width: 100%; padding: 8px; margin: 10px 0; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
     img { max-width: 100%; margin-top: 20px; }
-    .footer { margin-top: 40px; font-size: 0.9em; color: #555; }
-    .quality-section { margin-top: 20px; }
+    .output { margin-top: 20px; word-break: break-all; }
   </style>
 </head>
 <body>
 
-  <h1>YouTube Thumbnail Downloader</h1>
-  <p>Enter YouTube video URL or ID below:</p>
-  <input type="text" id="videoInput" placeholder="e.g. https://youtu.be/dQw4w9WgXcQ" />
-  <br/>
-  <button onclick="getThumbnails()">Get Thumbnails</button>
+  <h2>YouTube Thumbnail Extractor</h2>
 
-  <div id="result"></div>
+  <input type="text" id="youtubeURL" placeholder="Paste any YouTube URL here" />
+  <button onclick="getThumbnail()">Get Thumbnail</button>
 
-  <div class="footer">
-    © 2025 [Your Brand]. All rights reserved.
-  </div>
+  <div class="output" id="output"></div>
 
   <script>
-    function getThumbnails() {
-      const input = document.getElementById('videoInput').value.trim();
-      let videoId = '';
+    function getThumbnail() {
+      const url = document.getElementById("youtubeURL").value.trim();
+      const result = parseYouTubeURL(url);
 
-      // Extract video ID from URL or direct ID
-      if (input.includes('youtube.com') || input.includes('youtu.be')) {
-        const url = new URL(input);
-        if (url.hostname.includes('youtu.be')) {
-          videoId = url.pathname.slice(1);
-        } else {
-          videoId = url.searchParams.get('v');
-        }
-      } else {
-        videoId = input;
-      }
-
-      if (!videoId) {
-        alert('Invalid URL or ID');
-        return;
-      }
-
-      const qualities = [
-        { name: 'Max Resolution (4K/HD)', file: 'maxresdefault.jpg' },
-        { name: 'High Quality (HQ)', file: 'hqdefault.jpg' },
-        { name: 'Medium Quality (MQ)', file: 'mqdefault.jpg' },
-        { name: 'Standard Quality', file: 'default.jpg' }
-      ];
-
-      let html = '<div class="quality-section">';
-
-      qualities.forEach(q => {
-        const thumbUrl = `https://img.youtube.com/vi/${videoId}/${q.file}`;
-        html += `
-          <p>${q.name}</p>
-          <img src="${thumbUrl}" alt="${q.name} Thumbnail" />
-          <br/>
-          <a href="${thumbUrl}" download="${videoId}-${q.file}">
-            <button>Download ${q.name}</button>
-          </a>
-          <hr/>
+      const outputDiv = document.getElementById("output");
+      if (result) {
+        outputDiv.innerHTML = `
+          <strong>Video ID:</strong> ${result.videoID} <br/>
+          <strong>Watch URL:</strong> <a href="${result.watchURL}" target="_blank">${result.watchURL}</a> <br/>
+          <strong>Thumbnail:</strong><br/>
+          <img src="${result.thumbnailURL}" alt="Thumbnail" />
         `;
-      });
+      } else {
+        outputDiv.innerHTML = "<span style='color:red'>Invalid YouTube URL</span>";
+      }
+    }
 
-      html += '</div>';
-      document.getElementById('result').innerHTML = html;
+    function parseYouTubeURL(url) {
+      try {
+        const urlObj = new URL(url);
+        let videoID = "";
+
+        if (urlObj.hostname === "youtu.be") {
+          videoID = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes("youtube.com")) {
+          if (urlObj.searchParams.has("v")) {
+            videoID = urlObj.searchParams.get("v");
+          } else if (urlObj.pathname.startsWith("/shorts/")) {
+            videoID = urlObj.pathname.split("/shorts/")[1].split(/[/?&]/)[0];
+          } else if (urlObj.pathname.startsWith("/live/")) {
+            videoID = urlObj.pathname.split("/live/")[1].split(/[/?&]/)[0];
+          } else if (urlObj.pathname.startsWith("/embed/")) {
+            videoID = urlObj.pathname.split("/embed/")[1].split(/[/?&]/)[0];
+          }
+        }
+
+        if (videoID.length !== 11) {
+          throw new Error("Invalid Video ID extracted");
+        }
+
+        const standardWatchURL = `https://www.youtube.com/watch?v=${videoID}`;
+        const thumbnailURL = `https://img.youtube.com/vi/${videoID}/maxresdefault.jpg`;
+
+        return {
+          videoID: videoID,
+          watchURL: standardWatchURL,
+          thumbnailURL: thumbnailURL
+        };
+
+      } catch (err) {
+        console.error("Error parsing YouTube URL:", err);
+        return null;
+      }
     }
   </script>
 
