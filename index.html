@@ -5,34 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Thumbnail Extractor</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 30px auto; padding: 10px; }
-    input { width: 100%; padding: 8px; margin: 10px 0; font-size: 16px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    img { max-width: 100%; margin-top: 20px; }
-    .output { margin-top: 20px; word-break: break-all; }
+    body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 0; }
+    header {
+      background-color: maroon;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    input {
+      width: 90%;
+      padding: 8px;
+      margin: 20px 5%;
+      font-size: 16px;
+    }
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    img { max-width: 90%; margin: 10px 5%; display: block; border: 1px solid #ccc; border-radius: 4px; }
+    .output { margin-top: 20px; word-break: break-all; text-align: center; }
+    .download-btn {
+      background-color: blue;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border-radius: 5px;
+    }
+    .download-btn:active {
+      background-color: green;
+    }
+    .preview-label {
+      margin-top: 5px;
+      font-size: 14px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
 
-  <h2>YouTube Thumbnail Extractor</h2>
+  <header>YouTube Thumbnail Extractor</header>
 
-  <input type="text" id="youtubeURL" placeholder="Paste any YouTube URL here" />
-  <button onclick="getThumbnail()">Get Thumbnail</button>
+  <input type="text" id="youtubeURL" placeholder="Paste YouTube URL here" />
+  <button onclick="getThumbnails()">Get Thumbnails</button>
 
   <div class="output" id="output"></div>
 
   <script>
-    function getThumbnail() {
+    function getThumbnails() {
       const url = document.getElementById("youtubeURL").value.trim();
       const result = parseYouTubeURL(url);
 
       const outputDiv = document.getElementById("output");
       if (result) {
+        const maxres = `https://img.youtube.com/vi/${result.videoID}/maxresdefault.jpg`;
+        const sd = `https://img.youtube.com/vi/${result.videoID}/sddefault.jpg`;
+
         outputDiv.innerHTML = `
-          <strong>Video ID:</strong> ${result.videoID} <br/>
-          <strong>Watch URL:</strong> <a href="${result.watchURL}" target="_blank">${result.watchURL}</a> <br/>
-          <strong>Thumbnail:</strong><br/>
-          <img src="${result.thumbnailURL}" alt="Thumbnail" />
+          <div>
+            <strong>Video ID:</strong> ${result.videoID} <br/>
+            <strong>Watch URL:</strong> <a href="${result.watchURL}" target="_blank">${result.watchURL}</a>
+          </div>
+
+          <div>
+            <h3>First Thumbnail (Maximum Quality)</h3>
+            <div class="preview-label">Preview:</div>
+            <img src="${maxres}" alt="Max Thumbnail"/><br/>
+            <button class="download-btn" onclick="downloadImage('${maxres}', '${result.videoID}-max.jpg')">Download</button>
+          </div>
+
+          <div>
+            <h3>Second Thumbnail (Next Lower Quality ~480p)</h3>
+            <div class="preview-label">Preview:</div>
+            <img src="${sd}" alt="SD Thumbnail"/><br/>
+            <button class="download-btn" onclick="downloadImage('${sd}', '${result.videoID}-sd.jpg')">Download</button>
+          </div>
         `;
       } else {
         outputDiv.innerHTML = "<span style='color:red'>Invalid YouTube URL</span>";
@@ -63,17 +118,31 @@
         }
 
         const standardWatchURL = `https://www.youtube.com/watch?v=${videoID}`;
-        const thumbnailURL = `https://img.youtube.com/vi/${videoID}/maxresdefault.jpg`;
 
         return {
           videoID: videoID,
-          watchURL: standardWatchURL,
-          thumbnailURL: thumbnailURL
+          watchURL: standardWatchURL
         };
 
       } catch (err) {
         console.error("Error parsing YouTube URL:", err);
         return null;
+      }
+    }
+
+    async function downloadImage(url, filename) {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("Download failed:", error);
+        alert("Failed to download image. Please try again.");
       }
     }
   </script>
