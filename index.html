@@ -143,22 +143,22 @@
         h = cmToPx(h);
       }
 
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
+      const baseCanvas = document.createElement("canvas");
+      baseCanvas.width = w;
+      baseCanvas.height = h;
+      const ctx = baseCanvas.getContext("2d");
       const croppedCanvas = cropper.getCroppedCanvas();
       ctx.drawImage(croppedCanvas, 0, 0, w, h);
 
-      compressAndDownload(canvas, parseInt(kbInput.value));
+      compressToTargetKB(baseCanvas, parseInt(kbInput.value));
     });
 
-    function compressAndDownload(canvas, targetKB) {
+    function compressToTargetKB(canvas, targetKB) {
+      const targetBytes = targetKB * 1024;
       let quality = 0.95;
       const step = 0.05;
-      const targetBytes = targetKB * 1024;
 
-      const tryCompress = () => {
+      const compressLoop = () => {
         canvas.toBlob(blob => {
           if (blob.size <= targetBytes || quality < 0.1) {
             status.textContent = "Final Size: " + (blob.size / 1024).toFixed(2) + " KB";
@@ -168,12 +168,12 @@
             link.click();
           } else {
             quality -= step;
-            tryCompress();
+            compressLoop();
           }
         }, "image/jpeg", quality);
       };
 
-      tryCompress();
+      compressLoop();
     }
   </script>
 </body>
