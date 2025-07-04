@@ -3,185 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exact KB Resizer Final</title>
-
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-
+  <title>YouTube Thumbnail Downloader | [Your Brand]</title>
+  <meta name="description" content="Download YouTube video thumbnails in 4K, HD, or other quality options instantly. Fast and free thumbnail downloader tool.">
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    #preview { max-width: 100%; margin-top: 20px; }
-    #downloadBtn { background-color: blue; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-top: 20px; }
-    #downloadBtn.green { background-color: green; }
-    input, select { margin: 5px; padding: 5px; }
+    body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
+    h1 { color: #cc0000; }
+    input[type="text"] { width: 80%; padding: 10px; margin: 10px 0; }
+    button { padding: 10px 20px; background: #007BFF; color: #fff; border: none; cursor: pointer; }
+    button:active { background: #28a745; }
+    img { max-width: 100%; margin-top: 20px; }
+    .footer { margin-top: 40px; font-size: 0.9em; color: #555; }
+    .quality-section { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h2>Exact KB Resizer Final</h2>
 
-  <input type="file" id="fileInput" accept="image/*"><br>
-  <input type="number" id="widthInput" placeholder="Width">
-  <input type="number" id="heightInput" placeholder="Height">
-  <select id="unitSelect">
-    <option value="px">px</option>
-    <option value="cm">cm</option>
-  </select><br>
-  <input type="number" id="targetKB" placeholder="Target KB"><br>
+  <h1>YouTube Thumbnail Downloader</h1>
+  <p>Enter YouTube video URL or ID below:</p>
+  <input type="text" id="videoInput" placeholder="e.g. https://youtu.be/dQw4w9WgXcQ" />
+  <br/>
+  <button onclick="getThumbnails()">Get Thumbnails</button>
 
-  <div>
-    <img id="preview" style="max-width:300px; display:none;">
+  <div id="result"></div>
+
+  <div class="footer">
+    © 2025 [Your Brand]. All rights reserved.
   </div>
 
-  <button id="downloadBtn">Download Image</button>
-
   <script>
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const widthInput = document.getElementById('widthInput');
-    const heightInput = document.getElementById('heightInput');
-    const unitSelect = document.getElementById('unitSelect');
-    const targetKB = document.getElementById('targetKB');
-    const downloadBtn = document.getElementById('downloadBtn');
+    function getThumbnails() {
+      const input = document.getElementById('videoInput').value.trim();
+      let videoId = '';
 
-    let cropper;
-
-    function cmToPx(cm) {
-      return (cm / 2.54) * 96;
-    }
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        preview.src = reader.result;
-        preview.style.display = 'block';
-
-        if (cropper) cropper.destroy();
-
-        cropper = new Cropper(preview, {
-          viewMode: 1,
-          movable: true,
-          zoomable: true,
-          scalable: false,
-          cropBoxResizable: true,
-        });
-
-        setTimeout(updateCropBox, 500);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    unitSelect.addEventListener('change', updateCropBox);
-
-    function updateCropBox() {
-      if (!cropper) return;
-
-      let width = parseFloat(widthInput.value);
-      let height = parseFloat(heightInput.value);
-      let unit = unitSelect.value;
-
-      if (!width || !height) return;
-
-      if (unit === 'cm') {
-        width = cmToPx(width);
-        height = cmToPx(height);
+      // Extract video ID from URL or direct ID
+      if (input.includes('youtube.com') || input.includes('youtu.be')) {
+        const url = new URL(input);
+        if (url.hostname.includes('youtu.be')) {
+          videoId = url.pathname.slice(1);
+        } else {
+          videoId = url.searchParams.get('v');
+        }
+      } else {
+        videoId = input;
       }
 
-      cropper.setCropBoxData({
-        width: width,
-        height: height
-      });
-    }
-
-    widthInput.addEventListener('input', updateCropBox);
-    heightInput.addEventListener('input', updateCropBox);
-
-    downloadBtn.addEventListener('click', () => {
-      if (!cropper) return alert('Please upload and crop an image first.');
-
-      let width = parseFloat(widthInput.value);
-      let height = parseFloat(heightInput.value);
-      let unit = unitSelect.value;
-      let targetSize = parseInt(targetKB.value) * 1024;
-
-      if (!width || !height || !targetSize) {
-        alert('Please enter width, height, and target KB before downloading.');
+      if (!videoId) {
+        alert('Invalid URL or ID');
         return;
       }
 
-      if (unit === 'cm') {
-        width = cmToPx(width);
-        height = cmToPx(height);
-      }
+      const qualities = [
+        { name: 'Max Resolution (4K/HD)', file: 'maxresdefault.jpg' },
+        { name: 'High Quality (HQ)', file: 'hqdefault.jpg' },
+        { name: 'Medium Quality (MQ)', file: 'mqdefault.jpg' },
+        { name: 'Standard Quality', file: 'default.jpg' }
+      ];
 
-      async function resizeAndCompress() {
-        let tempWidth = width;
-        let tempHeight = height;
-        let minQuality = 0.1;
-        let maxQuality = 1.0;
+      let html = '<div class="quality-section">';
 
-        while (true) {
-          const canvas = cropper.getCroppedCanvas({ width: tempWidth, height: tempHeight });
+      qualities.forEach(q => {
+        const thumbUrl = `https://img.youtube.com/vi/${videoId}/${q.file}`;
+        html += `
+          <p>${q.name}</p>
+          <img src="${thumbUrl}" alt="${q.name} Thumbnail" />
+          <br/>
+          <a href="${thumbUrl}" download="${videoId}-${q.file}">
+            <button>Download ${q.name}</button>
+          </a>
+          <hr/>
+        `;
+      });
 
-          let bestBlob = null;
-          let bestDiff = Infinity;
-          let attempts = 0;
-          let lowQ = minQuality, highQ = maxQuality;
-
-          // Binary search for best quality at current dimensions
-          while (lowQ <= highQ && attempts < 20) {
-            let midQ = (lowQ + highQ) / 2;
-
-            const blob = await new Promise(resolve => {
-              canvas.toBlob(resolve, 'image/jpeg', midQ);
-            });
-
-            const size = blob.size;
-            const diff = Math.abs(size - targetSize);
-
-            if (diff < bestDiff) {
-              bestBlob = blob;
-              bestDiff = diff;
-            }
-
-            if (size > targetSize) {
-              highQ = midQ - 0.01;
-            } else if (size < targetSize) {
-              lowQ = midQ + 0.01;
-            } else {
-              bestBlob = blob;
-              break;
-            }
-            attempts++;
-          }
-
-          if (bestBlob && bestBlob.size <= targetSize + 2000) { // Allow 2KB margin
-            const url = URL.createObjectURL(bestBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'resized-image.jpg';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            downloadBtn.classList.add('green');
-            console.log(`Final size: ${(bestBlob.size / 1024).toFixed(2)} KB`);
-            break;
-          }
-
-          // Reduce dimensions by 10% if cannot reach target
-          tempWidth *= 0.9;
-          tempHeight *= 0.9;
-
-          if (tempWidth < 50 || tempHeight < 50) {
-            alert("Couldn't reach target size. Image became too small.");
-            break;
-          }
-        }
-      }
-
-      resizeAndCompress();
-    });
+      html += '</div>';
+      document.getElementById('result').innerHTML = html;
+    }
   </script>
+
 </body>
 </html>
