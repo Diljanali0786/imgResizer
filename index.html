@@ -57,28 +57,39 @@
   <div class="output" id="output"></div>
 
   <script>
-    function getThumbnails() {
+    async function getThumbnails() {
       const url = document.getElementById("youtubeURL").value.trim();
       const result = parseYouTubeURL(url);
 
       const outputDiv = document.getElementById("output");
       if (result) {
-        const maxres = `https://img.youtube.com/vi/${result.videoID}/maxresdefault.jpg`;
-        const sd = `https://img.youtube.com/vi/${result.videoID}/sddefault.jpg`;
+        const thumbnails = [
+          { url: `https://img.youtube.com/vi/${result.videoID}/maxresdefault.jpg`, label: "4K" },
+          { url: `https://img.youtube.com/vi/${result.videoID}/hqdefault.jpg`, label: "1080p" },
+          { url: `https://img.youtube.com/vi/${result.videoID}/sddefault.jpg`, label: "480p" }
+        ];
 
-        outputDiv.innerHTML = `
-          <div>
-            <img src="${maxres}" alt="Max Thumbnail"/><br/>
-            <button class="download-btn" onclick="downloadImage('${maxres}', '${result.videoID}-max.jpg')">Download</button>
-            <span class="quality-label">4K</span>
-          </div>
+        let htmlContent = "";
 
-          <div>
-            <img src="${sd}" alt="SD Thumbnail"/><br/>
-            <button class="download-btn" onclick="downloadImage('${sd}', '${result.videoID}-sd.jpg')">Download</button>
-            <span class="quality-label">480p</span>
-          </div>
-        `;
+        for (const thumb of thumbnails) {
+          const available = await checkImageExists(thumb.url);
+          if (available) {
+            htmlContent += `
+              <div>
+                <img src="${thumb.url}" alt="${thumb.label} Thumbnail"/><br/>
+                <button class="download-btn" onclick="downloadImage('${thumb.url}', '${result.videoID}-${thumb.label}.jpg')">Download</button>
+                <span class="quality-label">${thumb.label}</span>
+              </div>
+            `;
+          }
+        }
+
+        if (!htmlContent) {
+          htmlContent = "<span style='color:red'>No thumbnails found for this video.</span>";
+        }
+
+        outputDiv.innerHTML = htmlContent;
+
       } else {
         outputDiv.innerHTML = "<span style='color:red'>Invalid YouTube URL</span>";
       }
@@ -112,6 +123,15 @@
       } catch (err) {
         console.error("Error parsing YouTube URL:", err);
         return null;
+      }
+    }
+
+    async function checkImageExists(url) {
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        return res.ok;
+      } catch (err) {
+        return false;
       }
     }
 
