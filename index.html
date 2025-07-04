@@ -7,8 +7,7 @@
   <style>
     body {
       font-family: sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
+      margin: 0;
       padding: 0;
       background: #f8f8f8;
     }
@@ -19,26 +18,35 @@
       text-align: center;
       font-size: 26px;
       font-weight: bold;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 10px;
+      box-sizing: border-box;
     }
     input {
-      width: 90%;
+      width: 100%;
       padding: 10px;
-      margin: 20px 5%;
+      margin: 20px 0;
       font-size: 18px;
+      box-sizing: border-box;
     }
     button {
       display: inline-block;
       padding: 12px 22px;
       font-size: 18px;
       cursor: pointer;
-      margin: 10px 5px;
+      margin: 10px 5px 20px 0;
       border-radius: 5px;
       border: none;
       transition: background-color 0.3s;
     }
     img {
-      max-width: 90%;
-      margin: 10px 5%;
+      max-width: 100%;
+      margin: 10px 0;
       display: block;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -58,7 +66,7 @@
     .quality-label {
       display: inline-block;
       margin-left: 10px;
-      font-size: 18px; /* same as button size */
+      font-size: 18px;
       font-weight: 500;
       color: #333;
       vertical-align: middle;
@@ -78,10 +86,12 @@
 
   <header>YouTube Thumbnail Extractor</header>
 
-  <input type="text" id="youtubeURL" placeholder="Paste YouTube URL here" />
-  <button onclick="getThumbnail()">Get Thumbnail</button>
+  <div class="container">
+    <input type="text" id="youtubeURL" placeholder="Paste YouTube URL here" />
+    <button onclick="getThumbnail()">Get Thumbnail</button>
 
-  <div class="output" id="output"></div>
+    <div class="output" id="output"></div>
+  </div>
 
   <script>
     async function getThumbnail() {
