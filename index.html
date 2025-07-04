@@ -8,80 +8,73 @@
   <style>
     body {
       font-family: sans-serif;
-      background-color: #f0f0f0;
-      padding: 20px;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
       text-align: center;
     }
-    h1 {
+    header {
       background-color: darkred;
       color: white;
-      padding: 12px;
-      border-radius: 10px;
+      padding: 15px;
+      font-size: 24px;
     }
-    input[type='file'] {
-      margin: 10px 0;
+    main {
+      padding: 20px;
     }
-    input, select {
-      margin: 5px;
-      padding: 6px;
-      font-size: 14px;
+    input, select, button {
+      margin: 10px 5px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
     }
     #image-box {
-      margin-top: 15px;
-      max-width: 100%;
-      max-height: 400px;
-      overflow: hidden;
+      margin: 15px auto;
+      max-width: 90%;
+      border: 2px dashed #ccc;
       display: inline-block;
-      border: 1px solid #ccc;
     }
     #preview {
-      display: none;
       max-width: 100%;
-    }
-    button {
-      padding: 10px 20px;
-      margin-top: 15px;
-      font-size: 16px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:active {
-      background-color: #28a745;
     }
     #status {
       margin-top: 10px;
       font-weight: bold;
+      color: green;
+    }
+    button#download {
+      background-color: #007bff;
+      color: white;
+      border: none;
+    }
+    button#download:active {
+      background-color: green;
     }
   </style>
 </head>
 <body>
-  <h1>ImgResizer - Resize Image by KB</h1>
+  <header>ImgResizer - Resize Image by KB</header>
+  <main>
+    <input type="file" id="upload" accept="image/*"><br>
 
-  <input type="file" id="upload" accept="image/*"/><br/>
+    Width: <input type="number" id="width" value="100">
+    Height: <input type="number" id="height" value="120">
+    <select id="unit">
+      <option value="px">px</option>
+      <option value="cm">cm</option>
+    </select><br>
 
-  <label>Width:</label>
-  <input type="number" id="width" value="100"/>
-  <label>Height:</label>
-  <input type="number" id="height" value="120"/>
-  <select id="unit">
-    <option value="px">px</option>
-    <option value="cm">cm</option>
-  </select><br/>
+    Target KB: <input type="number" id="targetKB" value="50"><br>
 
-  <label>Target KB:</label>
-  <input type="number" id="targetKB" value="50"/><br/>
+    <button id="download">Download Image</button>
+    <div id="status"></div>
 
-  <button id="download">Download Image</button>
-  <div id="status"></div>
+    <div id="image-box">
+      <img id="preview" />
+    </div>
+  </main>
 
-  <div id="image-box">
-    <img id="preview" />
-  </div>
-
-  <canvas id="canvas" style="display: none;"></canvas>
+  <canvas id="canvas" style="display:none;"></canvas>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
@@ -92,7 +85,7 @@
     const unitSelect = document.getElementById("unit");
     const kbInput = document.getElementById("targetKB");
     const status = document.getElementById("status");
-    const download = document.getElementById("download");
+    const downloadBtn = document.getElementById("download");
 
     let cropper;
 
@@ -110,12 +103,11 @@
         if (cropper) cropper.destroy();
         cropper = new Cropper(preview, {
           viewMode: 1,
-          dragMode: "move",
           autoCropArea: 1,
+          dragMode: "move",
+          background: false,
           cropBoxResizable: false,
           cropBoxMovable: false,
-          background: false,
-          responsive: true,
           ready() {
             let w = parseInt(widthInput.value);
             let h = parseInt(heightInput.value);
@@ -130,9 +122,9 @@
       reader.readAsDataURL(file);
     });
 
-    download.addEventListener("click", () => {
+    downloadBtn.addEventListener("click", () => {
       if (!cropper) {
-        alert("Please upload and crop image first.");
+        alert("Please upload an image first.");
         return;
       }
 
@@ -143,14 +135,15 @@
         h = cmToPx(h);
       }
 
-      const baseCanvas = document.createElement("canvas");
-      baseCanvas.width = w;
-      baseCanvas.height = h;
-      const ctx = baseCanvas.getContext("2d");
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+
       const croppedCanvas = cropper.getCroppedCanvas();
       ctx.drawImage(croppedCanvas, 0, 0, w, h);
 
-      compressToTargetKB(baseCanvas, parseInt(kbInput.value));
+      compressToTargetKB(canvas, parseInt(kbInput.value));
     });
 
     function compressToTargetKB(canvas, targetKB) {
@@ -158,22 +151,22 @@
       let quality = 0.95;
       const step = 0.05;
 
-      const compressLoop = () => {
+      const tryCompress = () => {
         canvas.toBlob(blob => {
-          if (blob.size <= targetBytes || quality < 0.1) {
-            status.textContent = "Final Size: " + (blob.size / 1024).toFixed(2) + " KB";
+          if (blob.size <= targetBytes || quality <= 0.05) {
+            status.innerText = "Final Size: " + (blob.size / 1024).toFixed(2) + " KB";
             const link = document.createElement("a");
             link.download = "resized-image.jpg";
             link.href = URL.createObjectURL(blob);
             link.click();
           } else {
             quality -= step;
-            compressLoop();
+            tryCompress();
           }
         }, "image/jpeg", quality);
       };
 
-      compressLoop();
+      tryCompress();
     }
   </script>
 </body>
